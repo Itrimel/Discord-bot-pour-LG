@@ -58,6 +58,11 @@ class Groupe():
                 return joueur
         logger.warning("ID {} inconnu".format(str(discordID)))
         
+    def ayant_clan(self,clan):
+        for joueur in self.liste_joueur :
+            if joueur.role.clan==clan:
+                yield joueur
+        
         
         
         
