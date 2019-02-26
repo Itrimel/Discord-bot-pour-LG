@@ -7,6 +7,7 @@ Created on Mon Feb 25 19:03:43 2019
 
 import discord
 from token_file import TOKEN
+from joueur import *
 import logging
 
 #Mise en place du logging
