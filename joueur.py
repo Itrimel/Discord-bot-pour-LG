@@ -12,8 +12,8 @@ class descrEnum(str,enum.Enum):
         return self.value
 
 class Etat(descrEnum):
-    vivant="duh"
-    mort="encore duh"
+    vivant="vivant"
+    mort="mort"
 
 class Clan(descrEnum):
     village="aaa"
@@ -40,27 +40,49 @@ class Joueur():
 
 class Groupe():
     def __init__(self,liste_joueurs=[]):
-        self.liste_joueurs=liste_joueurs
+        self._liste_joueurs=liste_joueurs
+        
+    def __iter__(self):
+        self._iter_pos=0
+        return self
+    
+    def __next__(self):
+        if self._iter_pos < len(self._liste_joueurs):
+            self._iter_pos+=1
+            return(self._liste_joueurs[self._iter_pos-1])
+        else:
+            raise StopIteration
         
     def ajouter_joueur(self,joueur):
         if type(joueur)!=type(Joueur()):
             raise TypeError('les joueurs doivent être du type Joueur() !')
-        self.liste_joueurs+=[joueur]
+        self._liste_joueurs+=[joueur]
     
     def ayant_role(self,role,en_vie=False):
-        for joueur in self.liste_joueurs :
+        for joueur in self._liste_joueurs :
             if joueur.role==role and ( (not en_vie) or joueur.etat==Etat.vivant):
                 yield joueur
     
     def avoir_par_ID(self,discordID):
-        for joueur in self.liste_joueurs:
+        for joueur in self._liste_joueurs:
             if joueur.discordID == discordID:
                 return joueur
         logger.warning("ID {} inconnu".format(str(discordID)))
+    
+    def avoir_par_nom(self,nom):
+        for joueur in self._liste_joueurs:
+            if joueur.nom == nom:
+                return joueur
+        return -1
         
     def ayant_clan(self,clan):
-        for joueur in self.liste_joueur :
+        for joueur in self._liste_joueur :
             if joueur.role.clan==clan:
+                yield joueur
+    
+    def ayant_etat(self,etat):
+        for joueur in self.liste_joueurs:
+            if joueur.etat==etat:
                 yield joueur
         
         
