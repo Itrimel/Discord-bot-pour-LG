@@ -13,9 +13,33 @@ class BotLG(Bot):
     def __init__(self,groupe=pl.Groupe(),*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.groupe=groupe
-        self.vote_village=True
-        self.vote_loup=False
+        self.jour=True
+        self.nuit=False
         self.votes={}
+        self.channel_annonces=0
+    
+    async def debut_nuit(self):
+        self.votes={}
+        self.nuit=True
+        await self.send_message(self.channel_annonces,'La nuit se lève, prenez garde !')
+        #TODO : Mettre ici les messages à envoyer pour les pouvoirs nocturnes
+        for joueur in self.groupe.ayant_clan(pl.Clan.loup):
+            await self.send_message(self.get_user_info(joueur.id),"Le vote des loups-garous est ouvert.")
+    
+    async def fin_nuit(self):
+        self.nuit=False
+        #TODO : compter les cotes de LGs et tuer la personne désignée
+        message="Le jour se lève.\n"
+        await self.send_message(self.channel_annonces,message)
+    
+    async def debut_jour(self):
+        self.votes={}
+        self.jour=True
+        await self.send_message(self.channel_annonces,"Le vote du jour est ouvert.")
+
+    async def fin_jour(self):
+        self.jour=False
+        #TODO : compter les votes et annoncer la mort, et faire la mort
 
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
 
@@ -25,7 +49,7 @@ async def vote(context):
     if message.channel.is_private==False:
         await bot.delete_message(message)
         await bot.say('On vote en MP ! 😠')
-    elif not (bot.vote_village or (bot.vote_loup and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
+    elif not (bot.jour or (bot.nuit and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
         await bot.say("Pourquoi voter ? Ce n'est pas le moment")
     elif message.author.id in bot.votes :
         await bot.say("Tu as déjà voté petit coquin")
@@ -58,6 +82,10 @@ async def on_ready():
     
     if len(bot.servers)>1:
         raise NotImplementedError('Juste un serveur à la fois')
+    for channel in bot.get_all_channels():
+        if channel.name==CHANNEL_ANNONCES:
+            bot.channel_annonces=channel
+            break
     
     for personne in bot.get_all_members():
         if personne.id==bot.user.id:
