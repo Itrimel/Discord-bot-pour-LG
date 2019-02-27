@@ -5,7 +5,6 @@ Created on Wed Feb 27 14:34:11 2019
 @author: tete5
 """
 
-#import aiocron
 from discord.ext.commands import Bot
 import joueur as pl
 
@@ -28,8 +27,16 @@ class BotLG(Bot):
     
     async def fin_nuit(self):
         self.nuit=False
-        #TODO : compter les cotes de LGs et tuer la personne désignée
-        message="Le jour se lève.\n"
+        decompte={}
+        for vote in self.votes.values() :
+            if vote not in decompte :
+                decompte[vote]=1
+            else :
+                decompte[vote]+=1
+        #TODO : que faire en cas d'égalité ?
+        tué=max(decompte, key=lambda key: decompte[key])
+        self.groupe.changer_etat(tué,pl.Etat.mort)
+        message="Le jour se lève.\n Cette nuit, {} a été tué.".format(tué)
         await self.send_message(self.channel_annonces,message)
     
     async def debut_jour(self):
@@ -39,7 +46,26 @@ class BotLG(Bot):
 
     async def fin_jour(self):
         self.jour=False
-        #TODO : compter les votes et annoncer la mort, et faire la mort
+        decompte={}
+        for (votant,vote) in self.votes.items():
+            if vote not in decompte :
+                decompte[vote]=[votant]
+            else:
+                decompte[vote]+=1
+        #TODO : penser à rajouter l'ancien en cas d'égalité
+        tué=max(decompte, key=lambda key: len(decompte[key]))
+        
+        message="Le vote est fini. Le décompte est le suivant :\n"
+        for voté in decompte:
+            message+="{} :".format(voté)
+            for votant in decompte[voté]:
+                message+=" {},".format(votant)
+            message=message[:-1]+"\n"
+        message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
+        await self.send_message(self.channel_annonces,message)
+        
+        self.groupe.changer_etat(tué,pl.Etat.mort)
+
 
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
 
@@ -71,6 +97,9 @@ async def etat():
     for joueur in bot.groupe:
         message+='Nom : {}, état : {}\n'.format(joueur.nom,joueur.etat.description)
     await bot.say(message)
+    
+    
+#TODO:implémenter une commande pouvoir qui permet d'utiliser son pouvoir, et les rajouter un par un
     
     
 @bot.event

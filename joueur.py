@@ -41,17 +41,15 @@ class Joueur():
 class Groupe():
     def __init__(self,liste_joueurs=[]):
         self._liste_joueurs=liste_joueurs
+        self._iterable=0
         
     def __iter__(self):
-        self._iter_pos=0
+        #à tester !!!
+        self._iterable=iter(self._liste_joueurs)
         return self
     
     def __next__(self):
-        if self._iter_pos < len(self._liste_joueurs):
-            self._iter_pos+=1
-            return(self._liste_joueurs[self._iter_pos-1])
-        else:
-            raise StopIteration
+        return next(self._iterable)
         
     def ajouter_joueur(self,joueur):
         if type(joueur)!=type(Joueur()):
@@ -76,14 +74,20 @@ class Groupe():
         return -1
         
     def ayant_clan(self,clan):
-        for joueur in self._liste_joueur :
+        for joueur in self._liste_joueurs:
             if joueur.role.clan==clan:
                 yield joueur
     
     def ayant_etat(self,etat):
-        for joueur in self.liste_joueurs:
+        for joueur in self._liste_joueurs:
             if joueur.etat==etat:
                 yield joueur
+    
+    def changer_etat(self,nom,etat):
+        for i in len(self._liste_joueurs) :
+            if self._liste_joueurs[i].nom==nom:
+                self._liste_joueurs[i].etat=etat
+                break
         
         
         
