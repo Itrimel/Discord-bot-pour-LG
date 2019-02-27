@@ -13,8 +13,9 @@ class BotLG(Bot):
     def __init__(self,groupe=pl.Groupe(),*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.groupe=groupe
-        self.vote_village=False
-        self.vote_loup=True
+        self.vote_village=True
+        self.vote_loup=False
+        self.votes={}
 
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
 
@@ -26,6 +27,8 @@ async def vote(context):
         await bot.say('On vote en MP ! 😠')
     elif not (bot.vote_village or (bot.vote_loup and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
         await bot.say("Pourquoi voter ? Ce n'est pas le moment")
+    elif message.author.id in bot.votes :
+        await bot.say("Tu as déjà voté petit coquin")
     else:
         vote=message.content[6:]
         joueur=bot.groupe.avoir_par_nom(vote)
@@ -34,7 +37,9 @@ async def vote(context):
         elif joueur.etat==pl.Etat.mort:
             await bot.say("Joueur mort")
         else:
+            bot.votes[message.author.id]=vote
             await bot.say('Tu as voté pour {}'.format(vote))
+            
 
 @bot.command()
 async def etat():
