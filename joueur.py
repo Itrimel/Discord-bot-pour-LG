@@ -37,6 +37,13 @@ class Joueur():
         self.discordID=discordID
         self.role=role
         self.etat=etat
+    
+    def recharger(self):
+        pass
+    
+    def changer_etat(self,etat):
+        #TODO:Rajouter les pouvoirs à la mort ici, et tester !
+        self.etat=etat
 
 class Groupe():
     def __init__(self,liste_joueurs=[]):
@@ -44,7 +51,7 @@ class Groupe():
         self._iterable=0
         
     def __iter__(self):
-        #à tester !!!
+        #TODO : à tester !!!
         self._iterable=iter(self._liste_joueurs)
         return self
     
@@ -82,12 +89,6 @@ class Groupe():
         for joueur in self._liste_joueurs:
             if joueur.etat==etat:
                 yield joueur
-    
-    def changer_etat(self,nom,etat):
-        for i in len(self._liste_joueurs) :
-            if self._liste_joueurs[i].nom==nom:
-                self._liste_joueurs[i].etat=etat
-                break
         
         
         

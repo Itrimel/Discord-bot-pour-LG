@@ -37,7 +37,7 @@ class BotLG(Bot):
         if sum(nb_votes==decompte[tué] for nb_votes in decompte.values())>1 :
             message="Le jour se lève.\n Cette nuit, personne n'a été tué."
         else:
-            self.groupe.changer_etat(tué,pl.Etat.mort)
+            self.groupe.avoir_par_nom(tué).changer_etat(pl.Etat.mort)
             message="Le jour se lève.\n Cette nuit, {} a été tué.".format(tué)
         await self.send_message(self.channel_annonces,message)
     
@@ -67,7 +67,7 @@ class BotLG(Bot):
             message+="Il n'y a pas de tué aujourd'hui"
         else:
             message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
-            self.groupe.changer_etat(tué,pl.Etat.mort)
+            self.groupe.avoir_par_nom(tué).changer_etat(pl.Etat.mort)
         await self.send_message(self.channel_annonces,message)
 
 
