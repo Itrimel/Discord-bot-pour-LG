@@ -33,10 +33,12 @@ class BotLG(Bot):
                 decompte[vote]=1
             else :
                 decompte[vote]+=1
-        #TODO : que faire en cas d'égalité ?
         tué=max(decompte, key=lambda key: decompte[key])
-        self.groupe.changer_etat(tué,pl.Etat.mort)
-        message="Le jour se lève.\n Cette nuit, {} a été tué.".format(tué)
+        if sum(nb_votes==decompte[tué] for nb_votes in decompte.values())>1 :
+            message="Le jour se lève.\n Cette nuit, personne n'a été tué."
+        else:
+            self.groupe.changer_etat(tué,pl.Etat.mort)
+            message="Le jour se lève.\n Cette nuit, {} a été tué.".format(tué)
         await self.send_message(self.channel_annonces,message)
     
     async def debut_jour(self):
@@ -52,19 +54,21 @@ class BotLG(Bot):
                 decompte[vote]=[votant]
             else:
                 decompte[vote]+=1
-        #TODO : penser à rajouter l'ancien en cas d'égalité
         tué=max(decompte, key=lambda key: len(decompte[key]))
-        
         message="Le vote est fini. Le décompte est le suivant :\n"
         for voté in decompte:
             message+="{} :".format(voté)
             for votant in decompte[voté]:
                 message+=" {},".format(votant)
             message=message[:-1]+"\n"
-        message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
+        if sum(len(nb_votes)==len(decompte[tué]) for nb_votes in decompte.values())>1 :
+            #TODO : demander l'avis de l'ancien
+            #Sinon
+            message+="Il n'y a pas de tué aujourd'hui"
+        else:
+            message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
+            self.groupe.changer_etat(tué,pl.Etat.mort)
         await self.send_message(self.channel_annonces,message)
-        
-        self.groupe.changer_etat(tué,pl.Etat.mort)
 
 
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
