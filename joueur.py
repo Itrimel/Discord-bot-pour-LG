@@ -4,38 +4,14 @@ Created on Tue Feb 26 12:53:34 2019
 
 @author: tete5
 """
-import enum
 
-class descrEnum(str,enum.Enum):
-    @property
-    def description(self):
-        return self.value
-
-class Etat(descrEnum):
-    vivant="vivant"
-    mort="mort"
-
-class Clan(descrEnum):
-    village="aaa"
-    loup="zzzz"
-
-class Roles(enum.Enum):
-    villageois=("pauvre péon sans intérêt",Clan.village)
-    loup_garou=("le vrai MVP",Clan.loup)
-    
-    @property
-    def description(self):
-        return self.value[0]
-    
-    @property
-    def clan(self):
-        return self.value[1]
+from role import Clan,Roles,RoleInfo,Etat,Temps
 
 class Joueur():
     def __init__(self,nom='',discordID='',role='',etat=''):
         self.nom=nom
         self.discordID=discordID
-        self.role=role
+        self.role=RoleInfo(role)
         self.etat=etat
     
     def recharger(self):

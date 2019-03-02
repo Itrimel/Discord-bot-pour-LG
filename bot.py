@@ -12,21 +12,26 @@ class BotLG(Bot):
     def __init__(self,groupe=pl.Groupe(),*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.groupe=groupe
-        self.jour=True
-        self.nuit=False
+        self.temps=pl.Temps.matin
         self.votes={}
         self.channel_annonces=0
     
     async def debut_nuit(self):
         self.votes={}
-        self.nuit=True
+        self.temps=pl.Temps.matin
         await self.send_message(self.channel_annonces,'La nuit se lève, prenez garde !')
         #TODO : Mettre ici les messages à envoyer pour les pouvoirs nocturnes
         for joueur in self.groupe.ayant_clan(pl.Clan.loup):
             await self.send_message(self.get_user_info(joueur.id),"Le vote des loups-garous est ouvert.")
     
     async def fin_nuit(self):
-        self.nuit=False
+        
+        for joueur in self.groupe.ayant_etat(pl.Etat.vivant):
+            res = joueur.role.fin_nuit()
+            if res:
+                await self.send_message(self.get_user_info(joueur.id),res)
+        
+        self.temps=pl.Temps.matin
         decompte={}
         for vote in self.votes.values() :
             if vote not in decompte :
@@ -43,11 +48,11 @@ class BotLG(Bot):
     
     async def debut_jour(self):
         self.votes={}
-        self.jour=True
+        self.temps=pl.Temps.jour
         await self.send_message(self.channel_annonces,"Le vote du jour est ouvert.")
 
     async def fin_jour(self):
-        self.jour=False
+        self.temps=pl.Temps.soir
         decompte={}
         for (votant,vote) in self.votes.items():
             if vote not in decompte :
@@ -73,12 +78,13 @@ class BotLG(Bot):
 
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
 
+#TODO : tester vote
 @bot.command(pass_context=True)
 async def vote(context):
     message=context.message
     if message.channel.is_private==False:
         await bot.delete_message(message)
-        await bot.say('On vote en MP ! 😠')
+        await bot.send_message(bot.get_user_info(message.author.id),'On vote en MP ! :angry:')
     elif not (bot.jour or (bot.nuit and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
         await bot.say("Pourquoi voter ? Ce n'est pas le moment")
     elif message.author.id in bot.votes :
@@ -91,7 +97,7 @@ async def vote(context):
         elif joueur.etat==pl.Etat.mort:
             await bot.say("Joueur mort")
         else:
-            bot.votes[message.author.id]=vote
+            bot.votes[bot.groupe.avoir_par_ID(message.author.id).nom]=vote
             await bot.say('Tu as voté pour {}'.format(vote))
             
 
@@ -103,8 +109,22 @@ async def etat():
     await bot.say(message)
     
     
-#TODO:implémenter une commande pouvoir qui permet d'utiliser son pouvoir, et les rajouter un par un
-    
+#TODO : rajouter les pouvoirs un par un, tester voyante
+@bot.command(pass_context=True)
+async def pouvoir(context):
+    message=context.message
+    joueur=bot.groupe.avoir_par_ID(message.author.id)
+    if message.channel.is_private==False:
+        await bot.delete_message(message)
+        await bot.send_message(bot.get_user_info(message.author.id),"Le pouvoir s'utilise en MP ! :angry:")
+    else:
+        texte=message.content[6:]
+        validité=joueur.role.est_valide(texte,bot.groupe,bot.temps)
+        if validité[0]==False:
+            await bot.say(validité[1])
+        else:
+            réponse =joueur.role.faire_pouvoir(texte,bot.groupe)
+            await bot.say(réponse)
     
 @bot.event
 async def on_ready():
