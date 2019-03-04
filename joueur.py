@@ -6,6 +6,7 @@ Created on Tue Feb 26 12:53:34 2019
 """
 
 from role import Clan,Roles,RoleInfo,Etat,Temps
+import fichiers
 
 class Joueur():
     def __init__(self,nom='',discordID='',role='',etat=''):
@@ -17,14 +18,19 @@ class Joueur():
     def recharger(self):
         pass
     
-    def changer_etat(self,etat):
+    def tuer(self):
         #TODO:Rajouter les pouvoirs à la mort ici, et tester !
-        self.etat=etat
+        self.etat=Etat.mort
+        return "Tu es mort !"
 
 class Groupe():
     def __init__(self,liste_joueurs=[]):
         self._liste_joueurs=liste_joueurs
         self._iterable=0
+        self.tués_nuit=[]
+        self.tués_jour=[]
+        self.égalité=''
+        self.votes={}
         
     def __iter__(self):
         #TODO : à tester !!!
