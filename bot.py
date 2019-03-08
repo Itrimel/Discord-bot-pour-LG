@@ -198,7 +198,24 @@ async def on_ready():
             bot.channel_annonces=channel
             break
     
-    for personne in bot.get_all_members():
-        if personne.id==bot.user.id:
-            continue
-        bot.groupe.ajouter_joueur(pl.Joueur(nom=personne.name,discordID=personne.id,role=pl.Roles.loup_garou,etat=pl.Etat.vivant))
+    persos={}
+    with open("init.csv",'r') as file:
+        for line in file:
+            persos[line.split('\t')[0]]=line.split('\t')[1][:-1]
+    
+    for user in bot.get_all_members():
+        if user.name in persos:
+            role_user=''
+            for role in list(pl.Roles):
+                if role.value[0]==persos[user.name]:
+                    role_user=role
+            if role_user=='':
+                raise ValueError('Rôle inconnu : {}'.format(persos[user.name]))
+            bot.groupe.ajouter_joueur(pl.Joueur(nom=user.name,discordID=user.id,role=role_user,etat=pl.Etat.vivant))
+            persos.pop(user.name, None)
+    if len(persos)!=0:
+        message='Nom de joueur inconnu :'
+        for key in persos:
+            message+=' {},'.format(persos[key])
+        message=message[:-1]
+        raise ValueError(message)

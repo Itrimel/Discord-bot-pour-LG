@@ -26,10 +26,10 @@ class Temps(descrEnum):
     nuit='nuit'
     
 class Roles(enum.Enum):
-    villageois=("pauvre péon sans intérêt",Clan.village)
+    villageois=("villageois",Clan.village)
     voyante=("voyante",Clan.village)
     sorcière=("sorcière",Clan.village)
-    loup_garou=("le vrai MVP",Clan.loup)
+    loup_garou=("loup garou",Clan.loup)
 
 
 class RoleInfo():
