@@ -131,3 +131,6 @@ class RoleInfo():
                 " et {} ont été tués.".format(tués[-1])
             return False
         return False
+    
+    def fin_jour(self,groupe):
+        return False

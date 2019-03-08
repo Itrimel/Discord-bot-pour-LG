@@ -13,7 +13,7 @@ class BotLG(Bot):
         super().__init__(*args,**kwargs)
         self.groupe=groupe
         self.temps=pl.Temps.matin
-        self.channel_annonces=0
+        self.channel_annonces='annonces'
         self.message_vote=''
         
     async def fin_nuit(self):
@@ -25,9 +25,14 @@ class BotLG(Bot):
                 decompte[vote]=1
             else :
                 decompte[vote]+=1
-        tué_loups=max(decompte, key=lambda key: decompte[key])
-        if tué_loups not in self.groupe.tués_nuit:
-            self.groupe.tués_nuit+=[tué_loups]
+        if len(decompte)!=0:
+            tué_loups=max(decompte, key=lambda key: decompte[key])
+            if tué_loups not in self.groupe.tués_nuit:
+                self.groupe.tués_nuit+=[tué_loups]
+        
+        for joueur in self.groupe.ayant_clan(pl.Clan.loup):
+            await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est fermé.")
+
         
         for joueur in self.groupe.ayant_etat(pl.Etat.vivant):
             res = joueur.role.fin_nuit(self.groupe)
@@ -43,11 +48,11 @@ class BotLG(Bot):
         self.groupe.tués_nuit=[]
         
         if len(tués)==0:
-             message="Le jour se lève.\n Cette nuit, personne n'a été tué."
+             message="Le jour se lève.\nCette nuit, personne n'a été tué."
         elif len(tués)==1: 
-            message="Le jour se lève.\n Cette nuit, {} a été tué.".format(tués[0])
+            message="Le jour se lève.\nCette nuit, {} a été tué.".format(tués[0])
         else:
-            message="Le jour se lève.\n Cette nuit"
+            message="Le jour se lève.\nCette nuit"
             for i in range(len(tués)-1):
                 message+=', {}'.format(tués[i])
             " et {} ont été tués.".format(tués[-1])
@@ -62,7 +67,7 @@ class BotLG(Bot):
         message='Le vote est fermé.'
         
         for joueur in self.groupe.ayant_etat(pl.Etat.vivant):
-            res = joueur.role.fin_jour()
+            res = joueur.role.fin_jour(self.groupe)
             if res:
                 await self.send_message(self.get_user_info(joueur.id),res)
 
@@ -77,23 +82,26 @@ class BotLG(Bot):
                 decompte[vote]=[votant]
             else:
                 decompte[vote]+=1
-        tué=max(decompte, key=lambda key: len(decompte[key]))
-        message="Le résultat du vote du village est le suivant :\n"
-        for voté in decompte:
-            message+="{} :".format(voté)
-            for votant in decompte[voté]:
-                message+=" {},".format(votant)
-            message=message[:-1]+"\n"
-        if sum(len(nb_votes)==len(decompte[tué]) for nb_votes in decompte.values())>1 :
-            if len (self.groupe.égalité)!=0:
-                message+="Le tué est {} avec {} voix contres".format(self.groupe.égalité,len(decompte[self.groupe.égalité]))
-                if self.groupe.égalité not in self.groupe.tués_jour:
-                    self.groupe.tués_jour+=[self.groupe.égalité]
-            else:
-                message+="Il n'y a pas de tué par vote du village aujourd'hui"
+        if len(decompte)==0:
+            message="Pas de votes reçus aujourd'hui"
         else:
-            message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
-            self.groupe.tués_jour+=[tué]
+            tué=max(decompte, key=lambda key: len(decompte[key]))
+            message="Le résultat du vote du village est le suivant :\n"
+            for voté in decompte:
+                message+="{} :".format(voté)
+                for votant in decompte[voté]:
+                    message+=" {},".format(votant)
+                    message=message[:-1]+"\n"
+                    if sum(len(nb_votes)==len(decompte[tué]) for nb_votes in decompte.values())>1 :
+                        if len (self.groupe.égalité)!=0:
+                            message+="Le tué est {} avec {} voix contres".format(self.groupe.égalité,len(decompte[self.groupe.égalité]))
+                            if self.groupe.égalité not in self.groupe.tués_jour:
+                                self.groupe.tués_jour+=[self.groupe.égalité]
+                        else:
+                            message+="Il n'y a pas de tué par vote du village aujourd'hui"
+                    else:
+                        message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
+                        self.groupe.tués_jour+=[tué]
 
         tués=self.groupe.tués_jour
         for personne in tués:
@@ -109,7 +117,7 @@ class BotLG(Bot):
         
         #TODO : Mettre ici les messages à envoyer pour les pouvoirs nocturnes
         for joueur in self.groupe.ayant_clan(pl.Clan.loup):
-            await self.send_message(self.get_user_info(joueur.id),"Le vote des loups-garous est ouvert.")
+            await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est ouvert.")
 
         
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
@@ -119,9 +127,10 @@ bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {}
 async def vote(context):
     message=context.message
     if message.channel.is_private==False:
+        gen = await bot.get_user_info(message.author.id) #besoin de faire ça pour que l'envoi de message marche ...
         await bot.delete_message(message)
-        await bot.send_message(bot.get_user_info(message.author.id),'On vote en MP ! :angry:')
-    elif not (bot.jour or (bot.nuit and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
+        await bot.send_message(gen,'On vote en MP ! :angry:')
+    elif not (bot.temps == pl.Temps.jour or (bot.temps == pl.Temps.nuit and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
         await bot.say("Pourquoi voter ? Ce n'est pas le moment")
     elif message.author.id in bot.groupe.votes :
         await bot.say("Tu as déjà voté petit coquin")
@@ -143,6 +152,18 @@ async def etat():
     for joueur in bot.groupe:
         message+='Nom : {}, état : {}\n'.format(joueur.nom,joueur.etat.description)
     await bot.say(message)
+    
+@bot.command()
+async def suivant():
+    if bot.temps==pl.Temps.nuit:
+        await bot.fin_nuit()
+    elif bot.temps==pl.Temps.matin:
+        await bot.debut_jour()
+    elif bot.temps==pl.Temps.jour:
+        await bot.fin_jour()
+    elif bot.temps==pl.Temps.soir:
+        await bot.debut_nuit()
+        
     
     
 #TODO : rajouter les pouvoirs un par un, tester voyante
@@ -172,7 +193,7 @@ async def on_ready():
     if len(bot.servers)>1:
         raise NotImplementedError('Juste un serveur à la fois')
     for channel in bot.get_all_channels():
-        if channel.name==CHANNEL_ANNONCES:
+        if channel.name==bot.channel_annonces:
             bot.channel_annonces=channel
             break
     

@@ -7,9 +7,7 @@ Created on Mon Feb 25 19:03:43 2019
 from bot import *
 from token_file import TOKEN
 import logging
-import event
-
-CHANNEL_ANNONCES='général'
+#import event
 
 #Mise en place du logging
 logger = logging.getLogger('discord')

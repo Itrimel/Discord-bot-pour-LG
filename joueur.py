@@ -6,10 +6,9 @@ Created on Tue Feb 26 12:53:34 2019
 """
 
 from role import Clan,Roles,RoleInfo,Etat,Temps
-import fichiers
 
 class Joueur():
-    def __init__(self,nom='',discordID='',role='',etat=''):
+    def __init__(self,nom='',discordID='',role=Roles.villageois,etat=''):
         self.nom=nom
         self.discordID=discordID
         self.role=RoleInfo(role)
