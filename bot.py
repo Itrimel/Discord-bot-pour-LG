@@ -30,21 +30,20 @@ class BotLG(Bot):
             if tué_loups not in self.groupe.tués_nuit:
                 self.groupe.tués_nuit+=[tué_loups]
         
-        for joueur in self.groupe.ayant_clan(pl.Clan.loup):
-            await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est fermé.")
-
-        
         for joueur in self.groupe.ayant_etat(pl.Etat.vivant):
             res = joueur.role.fin_nuit(self.groupe)
             if res:
-                await self.send_message(self.get_user_info(joueur.id),res)
+                await self.send_message(await self.get_user_info(joueur.discordID),res)
+            if joueur.role.clan==pl.Clan.loup:
+                await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est fermé.")
+
     
     async def debut_jour(self):
         tués=self.groupe.tués_nuit
         for personne in tués:
             joueur = self.groupe.avoir_par_nom(personne)
             message = joueur.tuer()
-            await self.send_message(self.get_user_info(joueur.id),message)
+            await self.send_message(await self.get_user_info(joueur.discordID),message)
         self.groupe.tués_nuit=[]
         
         if len(tués)==0:
@@ -69,7 +68,7 @@ class BotLG(Bot):
         for joueur in self.groupe.ayant_etat(pl.Etat.vivant):
             res = joueur.role.fin_jour(self.groupe)
             if res:
-                await self.send_message(self.get_user_info(joueur.id),res)
+                await self.send_message(await self.get_user_info(joueur.discordID),res)
 
         await self.send_message(self.channel_annonces,message)
 
@@ -102,22 +101,25 @@ class BotLG(Bot):
                     else:
                         message+="Le tué est {} avec {} voix contres".format(tué,len(decompte[tué]))
                         self.groupe.tués_jour+=[tué]
+        
+        await self.send_message(self.channel_annonces,message)
 
         tués=self.groupe.tués_jour
         for personne in tués:
             joueur = self.groupe.avoir_par_nom(personne)
             message = joueur.tuer()
-            await self.send_message(self.get_user_info(joueur.id),message)
+            await self.send_message(await self.get_user_info(joueur.discordID),message)
         
         self.groupe.tués_jour=[]
         self.groupe.égalité=''
+        self.groupe.votes={}
         
-        await self.send_message(self.channel_annonces,message)
         await self.send_message(self.channel_annonces,'La nuit se lève, prenez garde !')
         
         #TODO : Mettre ici les messages à envoyer pour les pouvoirs nocturnes
         for joueur in self.groupe.ayant_clan(pl.Clan.loup):
-            await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est ouvert.")
+            if joueur.etat==pl.Etat.vivant:
+                await self.send_message(await self.get_user_info(joueur.discordID),"Le vote des loups-garous est ouvert.")
 
         
 bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {} ...')
@@ -127,12 +129,11 @@ bot=BotLG(command_prefix='!',command_not_found='Je ne connais pas la commande {}
 async def vote(context):
     message=context.message
     if message.channel.is_private==False:
-        gen = await bot.get_user_info(message.author.id) #besoin de faire ça pour que l'envoi de message marche ...
         await bot.delete_message(message)
-        await bot.send_message(gen,'On vote en MP ! :angry:')
+        await bot.send_message(await bot.get_user_info(message.author.id),'On vote en MP ! :angry:')
     elif not (bot.temps == pl.Temps.jour or (bot.temps == pl.Temps.nuit and bot.groupe.avoir_par_ID(message.author.id).role.clan==pl.Clan.loup)):
         await bot.say("Pourquoi voter ? Ce n'est pas le moment")
-    elif message.author.id in bot.groupe.votes :
+    elif bot.groupe.avoir_par_ID(message.author.id).nom in bot.groupe.votes :
         await bot.say("Tu as déjà voté petit coquin")
     else:
         vote=message.content[6:]
@@ -173,7 +174,7 @@ async def pouvoir(context):
     joueur=bot.groupe.avoir_par_ID(message.author.id)
     if message.channel.is_private==False:
         await bot.delete_message(message)
-        await bot.send_message(bot.get_user_info(message.author.id),"Le pouvoir s'utilise en MP ! :angry:")
+        await bot.send_message(await bot.get_user_info(message.author.id),"Le pouvoir s'utilise en MP ! :angry:")
     else:
         texte=message.content[6:]
         validité=joueur.role.est_valide(texte,bot.groupe,bot.temps)
